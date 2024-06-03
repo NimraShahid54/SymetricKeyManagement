@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryptography Key Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #71b7e6, #9b59b6);
+            margin: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 400px;
+            text-align: center;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        input {
+            padding: 10px;
+            margin: 10px 0;
+            width: calc(100% - 22px);
+            box-sizing: border-box;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .message {
+            color: red;
+            margin-top: 10px;
+        }
+
+        #keys-list {
+            text-align: left;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .back-button {
+            margin-top: 10px;
+            background-color: #e74c3c;
+        }
+
+        .back-button:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cryptography Key Management System</h1>
+
+        <!-- Authentication Section -->
+        <div id="auth-section" class="section">
+            <h2>Authenticate User</h2>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="authenticateUser()">Login</button>
+            <div id="auth-message" class="message"></div>
+        </div>
+
+        <!-- Security Question Section -->
+        <div id="security-section" class="section hidden">
+            <h2>Security Question</h2>
+            <div id="security-question"></div>
+            <input type="text" id="security-answer" placeholder="Answer">
+            <button onclick="verifySecurityAnswer()">Submit</button>
+            <button class="back-button" onclick="backToAuth()">Back</button>
+            <div id="security-message" class="message"></div>
+        </div>
+
+        <!-- Key Management Section -->
+        <div id="key-section" class="section hidden">
+            <h2>Generate Key</h2>
+            <input type="number" id="key-length" placeholder="Key Length in bits">
+            <button onclick="generateKey()">Generate Key</button>
+            <div id="key-message" class="message"></div>
+            <button class="back-button" onclick="backToSecurity()">Back</button>
+
+            <h2>Manage Keys</h2>
+            <button onclick="viewKeys()">View Keys</button>
+            <div id="keys-list" class="hidden"></div>
+            <button onclick="revokeKeyPrompt()">Revoke Key</button>
+            <input type="text" id="revoke-key" class="hidden" placeholder="Key to Revoke">
+            <button id="revoke-button" class="hidden" onclick="revokeKey()">Revoke</button>
+
+            <!-- Admin Section -->
+            <div id="admin-section" class="section hidden">
+                <h2>Admin Actions</h2>
+                <button onclick="showAddUser()">Add User</button>
+                <div id="add-user" class="hidden">
+                    <input type="text" id="new-username" placeholder="New Username">
+                    <input type="password" id="new-password" placeholder="New Password">
+                    <input type="text" id="new-security-answer" placeholder="Security Answer">
+                    <button onclick="addUser()">Add</button>
+                    <button class="back-button" onclick="hideAddUser()">Back</button>
+                </div>
+                <button onclick="showRemoveUser()">Remove User</button>
+                <div id="remove-user" class="hidden">
+                    <input type="text" id="remove-username" placeholder="Username to Remove">
+                    <button onclick="removeUser()">Remove</button>
+                    <button class="back-button" onclick="hideRemoveUser()">Back</button>
+                </div>
+                <div id="admin-message" class="message"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const users = {
+            "nimra": "123",
+            "aqsa": "456",
+            "moiza": "789",
+            "kinza": "012"
+        };
+
+        const securityAnswers = {
+            "nimra": "black",
+            "aqsa": "coal",
+            "moiza": "batmenton",
+            "kinza": "cat"
+        };
+
+        let keys = {};
+
+        function authenticateUser() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (users[username] && users[username] === password) {
+                document.getElementById('auth-message').innerText = "Authentication successful!";
+                localStorage.setItem('currentUser', username);
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('security-section').classList.remove('hidden');
+                setSecurityQuestion(username);
+            } else {
+                document.getElementById('auth-message').innerText = "Authentication failed.";
+            }
+        }
+
+        function setSecurityQuestion(username) {
+            let question;
+            switch(username) {
+                case 'nimra':
+                    question = "What is your favorite color?";
+                    break;
+                case 'aqsa':
+                    question = "What is your favorite subject?";
+                    break;
+                case 'moiza':
+                    question = "What is your favorite sport?";
+                    break;
+                case 'kinza':
+                    question = "What is your favorite pet?";
+                    break;
+            }
+            document.getElementById('security-question').innerText = question;
+        }
+
+        function verifySecurityAnswer() {
+            const username = localStorage.getItem('currentUser');
+            const answer = document.getElementById('security-answer').value;
+
+            if (securityAnswers[username] && securityAnswers[username] === answer) {
+                document.getElementById('security-message').innerText = "Security answer correct!";
+                document.getElementById('security-section').classList.add('hidden');
+                document.getElementById('key-section').classList.remove('hidden');
+                if (username === 'nimra') {
+                    document.getElementById('admin-section').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('security-message').innerText = "Incorrect answer to the security question.";
+            }
+        }
+
+        function generateKey() {
+            const keyLengthBits = parseInt(document.getElementById('key-length').value);
+            if (!keyLengthBits) {
+                document.getElementById('key-message').innerText = "Please enter a valid key length.";
+                return;
+            }
+
+            const key = generateRandomKey(keyLengthBits);
+            keys[key] = { expiryDate: calculateExpiryDate(30), isRevoked: false, isUsed: false };
+            document.getElementById('key-message').innerText = `Generated Key: ${key}\nExpiry Date: ${formatTime(keys[key].expiryDate)}`;
+        }
+
+        function generateRandomKey(keyLengthBits) {
+            const keyLengthBytes = Math.ceil(keyLengthBits / 8);
+            let keyArray = new Uint8Array(keyLengthBytes);
+            window.crypto.getRandomValues(keyArray);
+            return btoa(String.fromCharCode(...keyArray));
+        }
+
+        function calculateExpiryDate(daysValid) {
+            const now = new Date();
+            now.setDate(now.getDate() + daysValid);
+            return now;
+        }
+
+        function formatTime(date) {
+            return date.toISOString().replace('T', ' ').substring(0, 19);
+        }
+
+        function viewKeys() {
+            const keysListDiv = document.getElementById('keys-list');
+            keysListDiv.innerHTML = '';
+            for (const key in keys) {
+                if (keys.hasOwnProperty(key)) {
+                    const keyInfo = keys[key];
+                    keysListDiv.innerHTML += `
+                        <p>Key: ${key}</p>
+                        <p>Expiry: ${formatTime(keyInfo.expiryDate)}</p>
+                        <p>Revoked: ${keyInfo.isRevoked ? 'Yes' : 'No'}</p>
+                        <p>Used: ${keyInfo.isUsed ? 'Yes' : 'No'}</p>
+                        <hr>
+                    `;
+                }
+            }
+            keysListDiv.classList.remove('hidden');
+        }
+
+        function revokeKeyPrompt() {
+            document.getElementById('revoke-key').classList.remove('hidden');
+            document.getElementById('revoke-button').classList.remove('hidden');
+        }
+
+        function revokeKey() {
+            const keyToRevoke = document.getElementById('revoke-key').value;
+            if (keys[keyToRevoke]) {
+                keys[keyToRevoke].isRevoked = true;
+                document.getElementById('key-message').innerText = "Key revoked successfully.";
+            } else {
+                document.getElementById('key-message').innerText = "Key not found.";
+            }
+            document.getElementById('revoke-key').classList.add('hidden');
+            document.getElementById('revoke-button').classList.add('hidden');
+        }
+
+        function showAddUser() {
+            document.getElementById('add-user').classList.remove('hidden');
+        }
+
+        function hideAddUser() {
+            document.getElementById('add-user').classList.add('hidden');
+        }
+
+        function addUser() {
+            const newUsername = document.getElementById('new-username').value;
+            const newPassword = document.getElementById('new-password').value;
+            const newSecurityAnswer = document.getElementById('new-security-answer').value;
+            if (newUsername && newPassword && newSecurityAnswer) {
+                if (users[newUsername]) {
+                    document.getElementById('admin-message').innerText = "User already exists.";
+                } else {
+                    users[newUsername] = newPassword;
+                    securityAnswers[newUsername] = newSecurityAnswer;
+                    document.getElementById('admin-message').innerText = "User added successfully.";
+                    document.getElementById('add-user').classList.add('hidden');
+                }
+            } else {
+                document.getElementById('admin-message').innerText = "Please fill out all fields.";
+            }
+        }
+
+        function showRemoveUser() {
+            document.getElementById('remove-user').classList.remove('hidden');
+        }
+
+        function hideRemoveUser() {
+            document.getElementById('remove-user').classList.add('hidden');
+        }
+
+        function removeUser() {
+            const removeUsername = document.getElementById('remove-username').value;
+            if (removeUsername && users[removeUsername]) {
+                delete users[removeUsername];
+                delete securityAnswers[removeUsername];
+                document.getElementById('admin-message').innerText = "User removed successfully.";
+                document.getElementById('remove-user').classList.add('hidden');
+            } else {
+                document.getElementById('admin-message').innerText = "User not found.";
+            }
+        }
+
+        function backToAuth() {
+            document.getElementById('security-section').classList.add('hidden');
+            document.getElementById('auth-section').classList.remove('hidden');
+        }
+
+        function backToSecurity() {
+            document.getElementById('key-section').classList.add('hidden');
+            document.getElementById('security-section').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
